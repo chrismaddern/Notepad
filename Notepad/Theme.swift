@@ -7,9 +7,9 @@
 //
 
 #if os(iOS)
-    import UIKit
+import UIKit
 #elseif os(macOS)
-    import AppKit
+import AppKit
 #endif
 
 public struct Theme {
@@ -19,11 +19,11 @@ public struct Theme {
     public fileprivate(set) var backgroundColor: UniversalColor = UniversalColor.white
     /// The tint color (AKA cursor color) of the Notepad.
     public fileprivate(set) var tintColor: UniversalColor = UniversalColor.blue
-
+    
     /// All of the other styles for the Notepad editor.
     var styles: [Style] = []
     
-
+    
     /// Build a theme from a JSON theme file.
     ///
     /// - parameter name: The name of the JSON theme file.
@@ -42,15 +42,24 @@ public struct Theme {
             
             path = path2
         }
+        else if let path2 = bundle.path(forResource: "\(name)", ofType: "json") {
+            
+            path = path2
+        }
         else if let path3 = bundle.path(forResource: "themes/\(name)", ofType: "json") {
-
+            
             path = path3
         }
         else {
             
-            print("[Notepad] Unable to load your theme file.")
-            
-            return
+            let mainBundle:Bundle = Bundle.main
+            if let path4 = mainBundle.path(forResource: name, ofType: "json") {
+                path = path4
+            }
+            else {
+                print("[Notepad] Unable to load your theme file.")
+                return
+            }
         }
         
         if let data = convertFile(path) {
@@ -63,7 +72,7 @@ public struct Theme {
             configure(data)
         }
     }
-
+    
     /// Configures all of the styles for the Theme.
     ///
     /// - parameter data: The dictionary data form the parsed JSON file.
@@ -71,7 +80,7 @@ public struct Theme {
         if let editorStyles = data["editor"] as? [String: AnyObject] {
             configureEditor(editorStyles)
         }
-
+        
         if var allStyles = data["styles"] as? [String: AnyObject] {
             if let bodyStyles = allStyles["body"] as? [String: AnyObject] {
                 if let parsedBodyStyles = parse(bodyStyles) {
@@ -85,7 +94,7 @@ public struct Theme {
                 ]
                 body = Style(element: .body, attributes: attributes)
             }
-
+            
             allStyles.removeValue(forKey: "body")
             for (element, attributes) in allStyles {
                 if let parsedStyles = parse(attributes as! [String : AnyObject]) {
@@ -100,7 +109,7 @@ public struct Theme {
             }
         }
     }
-
+    
     /// Sets the background color, tint color, etc. of the Notepad editor.
     ///
     /// - parameter attributes: The attributes to parse for the editor.
@@ -109,13 +118,13 @@ public struct Theme {
             let value = bgColor as! String
             backgroundColor = UniversalColor(hexString: value)
         }
-
+        
         if let tint = attributes["tintColor"] {
             let value = tint as! String
             tintColor = UniversalColor(hexString: value)
         }
     }
-
+    
     /// Parses attributes from shorthand JSON to real attributed string key constants.
     ///
     /// - parameter attributes: The attributes to parse.
@@ -123,16 +132,16 @@ public struct Theme {
     /// - returns: The converted attribute/key constant pairings.
     func parse(_ attributes: [String: AnyObject]) -> [NSAttributedString.Key: Any]? {
         var final: [NSAttributedString.Key: Any] = [:]
-
+        
         if let color = attributes["color"] {
             let value = color as! String
             final[NSAttributedString.Key.foregroundColor] = UniversalColor(hexString: value)
         }
-
+        
         if let font = attributes["font"] {
             let fontName = font as! String
             var fontSize: CGFloat = 15.0
-
+            
             if let size = attributes["size"] {
                 fontSize = size as! CGFloat
             }
@@ -140,7 +149,7 @@ public struct Theme {
                 let bodyFont: UniversalFont = body.attributes[NSAttributedString.Key.font] as! UniversalFont
                 fontSize = bodyFont.pointSize
             }
-
+            
             if fontName == "System" {
                 final[NSAttributedString.Key.font] = UniversalFont.systemFont(ofSize: fontSize)
             }
@@ -153,14 +162,14 @@ public struct Theme {
             if let size = attributes["size"] {
                 let bodyFont: UniversalFont = body.attributes[NSAttributedString.Key.font] as! UniversalFont
                 let fontSize = size as! CGFloat
-
+                
                 final[NSAttributedString.Key.font] = UniversalFont(name: bodyFont.fontName, size: fontSize)
             }
         }
-
+        
         return final
     }
-
+    
     /// Converts a file from JSON to a [String: AnyObject] dictionary.
     ///
     /// - parameter path: The path to the JSON file.
@@ -179,7 +188,7 @@ public struct Theme {
         } catch let error as NSError {
             print(error)
         }
-
+        
         return nil
     }
 }
